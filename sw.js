@@ -1,8 +1,8 @@
-const CACHE = 'poker-trainer-v2';
+const CACHE = 'poker-trainer-v3';
 const ASSETS = [
   '.', 'index.html', 'style.css',
   'js/deck.js', 'js/evaluator.js', 'js/simulator.js', 'js/app.js',
-  'manifest.json'
+  'manifest.json', 'icon.svg'
 ];
 
 self.addEventListener('install', e => {

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- App background -->
+  <rect width="512" height="512" rx="80" fill="#0a2010"/>
+  <!-- Card -->
+  <rect x="72" y="56" width="368" height="400" rx="28" fill="#fff"/>
+  <!-- Gold border accent -->
+  <rect x="72" y="56" width="368" height="400" rx="28" fill="none" stroke="#c8a400" stroke-width="6"/>
+  <!-- Top-left K -->
+  <text x="104" y="152" font-family="Georgia, serif" font-size="100" font-weight="bold" fill="#cc1111">K</text>
+  <!-- Center large diamond -->
+  <polygon points="256,140 326,256 256,372 186,256" fill="#cc1111"/>
+  <!-- Bottom-right K (rotated 180) -->
+  <text x="408" y="424" font-family="Georgia, serif" font-size="100" font-weight="bold" fill="#cc1111" text-anchor="end" transform="rotate(180,364,388)">K</text>
+</svg>
