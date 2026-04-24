@@ -435,6 +435,7 @@ function advanceStreet() {
   submitBtn.style.display = 'block';
   submitBtn.textContent = 'Submit';
   document.getElementById('next-btn').style.display = 'none';
+  document.getElementById('float-next-btn').style.display = 'none';
 }
 
 function buildArcHtml() {
@@ -505,6 +506,7 @@ function onNext() {
   submitBtn.style.display = 'block';
   if (!isDecide) submitBtn.textContent = 'Submit';
   document.getElementById('next-btn').style.display = 'none';
+  document.getElementById('float-next-btn').style.display = 'none';
 }
 
 // ---- Sub-mode (draw5 only) ----
