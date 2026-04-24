@@ -6,7 +6,8 @@ const state = {
   deal:             null,
   phase:            'guessing',
   opponents:        3,
-  score:            { points: 0, hands: 0, totalError: 0 }
+  score:            { points: 0, hands: 0, totalError: 0 },
+  winHistory:       []        // [{street, winPct}] for current Hold'em hand
 };
 
 const STREETS = ['Pre-flop', 'Flop', 'Turn', 'River'];
@@ -36,13 +37,9 @@ function dealHand() {
 
   switch (state.mode) {
     case 'holdem': {
-      const street       = Math.floor(Math.random() * 4);
       const holeCards    = take(2);
-      const communityCards = [];
-      if (street >= 1) communityCards.push(...take(3));
-      if (street >= 2) communityCards.push(...take(1));
-      if (street >= 3) communityCards.push(...take(1));
-      return { holeCards, communityCards, street };
+      const allCommunity = take(5); // pre-deal all 5, reveal progressively
+      return { holeCards, communityCards: [], allCommunity, street: 0 };
     }
     case 'draw5':
       return { hand: take(5) };
@@ -60,7 +57,7 @@ function renderCard(card, faceDown = false, opts = {}) {
   const rank  = RANK_SYM[card.rank];
   const suit  = SUIT_SYM[card.suit];
   const color = isRed(card) ? 'red' : 'black';
-  const extra = opts.discarding ? ' discarding' : opts.isNew ? ' card-new' : '';
+  const extra = opts.discarding ? ' discarding' : opts.isNew ? ' card-new' : opts.hole ? ' card-hole' : '';
   const sel   = opts.selectable ? ' selectable' : '';
   const idx   = opts.index !== undefined ? ` data-index="${opts.index}"` : '';
   return `<div class="card ${color}${extra}${sel}"${idx} aria-label="${RANK_WORD[card.rank]} of ${SUIT_NAME[card.suit]}">
@@ -76,21 +73,40 @@ function renderCardsArea() {
 
   switch (state.mode) {
     case 'holdem': {
-      const streetLabel = d.street > 0
-        ? `<span class="street-badge">${STREETS[d.street]}</span>` : '';
-      const holeHtml = d.holeCards.map(c => renderCard(c)).join('');
-      const commHtml = d.communityCards.length
-        ? `<div class="card-group">
-             <div class="group-label">Community</div>
-             <div class="cards-row">${d.communityCards.map(c => renderCard(c)).join('')}</div>
-           </div>`
-        : '';
-      return `
+      const pct = (street) => {
+        const h = state.winHistory.find(e => e.street === street);
+        return h ? `<div class="comm-pct">${h.winPct}%</div>` : '<div class="comm-pct"></div>';
+      };
+      const preflop = state.winHistory.find(e => e.street === 0);
+      const holePct = preflop ? `<span class="result-badge">${preflop.winPct}%</span>` : '';
+      let html = `
         <div class="card-group">
-          <div class="group-label">Your Hand ${streetLabel}</div>
-          <div class="cards-row">${holeHtml}</div>
-        </div>
-        ${commHtml}`;
+          <div class="group-label">Your Hand ${holePct}</div>
+          <div class="cards-row">${d.holeCards.map(c => renderCard(c)).join('')}</div>
+        </div>`;
+      if (d.communityCards.length >= 3) {
+        let commSections = '';
+        commSections += `<div class="comm-section">
+          <div class="comm-label">Flop</div>
+          <div class="cards-row">${d.allCommunity.slice(0,3).map(c => renderCard(c)).join('')}</div>
+          ${pct(1)}
+        </div>`;
+        if (d.communityCards.length >= 4) commSections += `<div class="comm-section">
+          <div class="comm-label">Turn</div>
+          <div class="cards-row">${renderCard(d.allCommunity[3])}</div>
+          ${pct(2)}
+        </div>`;
+        if (d.communityCards.length >= 5) commSections += `<div class="comm-section">
+          <div class="comm-label">River</div>
+          <div class="cards-row">${renderCard(d.allCommunity[4])}</div>
+          ${pct(3)}
+        </div>`;
+        html += `<div class="card-group">
+          <div class="group-label">Community</div>
+          <div class="comm-row">${commSections}</div>
+        </div>`;
+      }
+      return html;
     }
 
     case 'draw5': {
@@ -118,13 +134,10 @@ function renderCardsArea() {
         <div class="card-group">
           <div class="group-label">Your Hand</div>
           <div class="cards-row">
-            ${renderCard(d.holeCard[0])}
+            ${renderCard(d.holeCard[0], false, { hole: true })}
             ${d.upCards.map(c => renderCard(c)).join('')}
           </div>
-          <div class="stud-hint">
-            <span class="hole-hint">↑ hole (private)</span>
-            <span class="up-hint">↑ face-up (visible to all)</span>
-          </div>
+          <div class="stud-hint">↑ gold border = hole card (private)</div>
         </div>`;
 
     case 'stud7':
@@ -199,8 +212,7 @@ function onSubmit() {
 
   setTimeout(() => {
     const params = getSimParams(state.mode, state.deal, state.opponents);
-    const result = simulate({ ...params, numSims: 2000 });
-    const actual = result.winPct;
+    const { winPct: actual, topWinHand } = simulate({ ...params, numSims: 3000 });
     const error  = Math.abs(guess - actual);
 
     state.score.hands++;
@@ -210,8 +222,20 @@ function onSubmit() {
     else if (error <= 20) state.score.points += 1;
     saveStats();
 
+    // Hold'em intermediate streets: record, show badge, auto-advance
+    if (state.mode === 'holdem' && state.deal.street < 3) {
+      state.winHistory.push({ street: state.deal.street, winPct: actual, guess });
+      advanceStreet();
+      updateScoreDisplay();
+      return;
+    }
+
+    // River or non-Hold'em: show full reveal
+    if (state.mode === 'holdem') {
+      state.winHistory.push({ street: state.deal.street, winPct: actual, guess });
+    }
     state.phase = 'revealed';
-    renderReveal(guess, actual, error);
+    renderReveal(guess, actual, error, topWinHand);
     updateScoreDisplay();
   }, 40);
 }
@@ -240,7 +264,7 @@ function onDraw() {
     discardIdx.forEach((origPos, j) => { finalHand[origPos] = newCards[j]; });
 
     // Compute user's expected win% and optimal draw
-    const userExpected = simulateDraw(keepCards, drawCount, state.opponents, 500);
+    const { winPct: userExpected, topWinHand } = simulateDraw(keepCards, drawCount, state.opponents, 1000);
     const optimal      = findOptimalDraw(state.deal.hand, state.opponents, 3);
 
     // Score: based on difference from optimal expected win%
@@ -253,7 +277,7 @@ function onDraw() {
     saveStats();
 
     state.phase = 'revealed';
-    renderDrawReveal(finalHand, keepIdx, discardIdx, userExpected, optimal);
+    renderDrawReveal(finalHand, keepIdx, discardIdx, userExpected, topWinHand, optimal);
     updateScoreDisplay();
   }, 40);
 }
@@ -266,7 +290,7 @@ function scrollToReveal() {
 }
 
 // ---- Reveal (rate mode) ----
-function renderReveal(guess, actual, error) {
+function renderReveal(guess, actual, error, topWinHand) {
   const score     = getHandScore();
   const isPreflop = state.mode === 'holdem' && state.deal.communityCards.length === 0;
   const name      = isPreflop ? describeHoleCards(state.deal.holeCards) : handName(score);
@@ -286,10 +310,21 @@ function renderReveal(guess, actual, error) {
     ? `${guess - actual}% too high`
     : guess < actual ? `${actual - guess}% too low` : 'spot on';
 
+  const winHandLine = topWinHand
+    ? `<div class="hand-desc">Most often wins with: <strong>${topWinHand}</strong></div>` : '';
+
+  const arcHtml = (state.mode === 'holdem' && state.deal.street === 3) ? buildArcHtml() : '';
+
+  // Next button label
+  const nextLabels = { 0: 'Deal Flop →', 1: 'Deal Turn →', 2: 'Deal River →', 3: 'Next Hand →' };
+  const nextLabel = state.mode === 'holdem' ? nextLabels[state.deal.street] : 'Next Hand →';
+
   document.getElementById('reveal-area').innerHTML = `
     <div class="reveal-card">
+      ${arcHtml}
       <div class="hand-name">${name}</div>
       <div class="hand-desc">${desc}</div>
+      ${winHandLine}
       <div class="win-bar-wrap">
         <div class="win-bar" style="width:${actual}%"></div>
         <span class="win-bar-label">${actual}% win rate vs ${state.opponents} opponents</span>
@@ -311,8 +346,10 @@ function renderReveal(guess, actual, error) {
       <div class="rating ${ratingClass}">${ratingIcon} ${ratingText}</div>
     </div>`;
 
+  const nextBtn = document.getElementById('next-btn');
+  nextBtn.textContent  = nextLabel;
+  nextBtn.style.display = 'block';
   document.getElementById('submit-btn').style.display = 'none';
-  document.getElementById('next-btn').style.display   = 'block';
   scrollToReveal();
 }
 
@@ -323,7 +360,7 @@ function sameKeepSet(a, b) {
   return sa.length === sb.length && sa.every((v,i) => v === sb[i]);
 }
 
-function renderDrawReveal(finalHand, keepIdx, discardIdx, userExpected, optimal) {
+function renderDrawReveal(finalHand, keepIdx, discardIdx, userExpected, topWinHand, optimal) {
   const score = evaluateHand(finalHand);
   const name  = handName(score);
   const desc  = handDescription(score);
@@ -359,10 +396,14 @@ function renderDrawReveal(finalHand, keepIdx, discardIdx, userExpected, optimal)
       <div class="cards-row">${finalCardsHtml}</div>
     </div>`;
 
+  const drawWinHandLine = topWinHand
+    ? `<div class="hand-desc">Most often wins with: <strong>${topWinHand}</strong></div>` : '';
+
   document.getElementById('reveal-area').innerHTML = `
     <div class="reveal-card">
       <div class="hand-name">${name}</div>
       <div class="hand-desc">${desc}</div>
+      ${drawWinHandLine}
       <div class="win-bar-wrap">
         <div class="win-bar" style="width:${userExpected}%"></div>
         <span class="win-bar-label">Your draw: ~${userExpected}% expected</span>
@@ -376,11 +417,71 @@ function renderDrawReveal(finalHand, keepIdx, discardIdx, userExpected, optimal)
   scrollToReveal();
 }
 
+// ---- Hold'em street progression ----
+function advanceStreet() {
+  const d = state.deal;
+  if      (d.street === 0) { d.communityCards.push(...d.allCommunity.slice(0, 3)); d.street = 1; }
+  else if (d.street === 1) { d.communityCards.push(d.allCommunity[3]);             d.street = 2; }
+  else if (d.street === 2) { d.communityCards.push(d.allCommunity[4]);             d.street = 3; }
+
+  state.phase = 'guessing';
+  document.getElementById('cards-area').innerHTML  = renderCardsArea();
+  document.getElementById('reveal-area').innerHTML = '';
+  document.getElementById('slider').value = 50;
+  updateSliderDisplay(50);
+  document.querySelectorAll('.strength-btn').forEach(b => b.classList.remove('selected'));
+  const submitBtn = document.getElementById('submit-btn');
+  submitBtn.disabled    = false;
+  submitBtn.style.display = 'block';
+  submitBtn.textContent = 'Submit';
+  document.getElementById('next-btn').style.display = 'none';
+}
+
+function buildArcHtml() {
+  const names = ['Pre-flop', 'Flop', 'Turn', 'River'];
+  const d = state.deal;
+
+  const makeSection = ({ street, winPct, guess }, sep) => {
+    let cardsHtml;
+    if      (street === 0) cardsHtml = d.holeCards.map(c => renderCard(c)).join('');
+    else if (street === 1) cardsHtml = d.allCommunity.slice(0, 3).map(c => renderCard(c)).join('');
+    else if (street === 2) cardsHtml = renderCard(d.allCommunity[3]);
+    else                   cardsHtml = renderCard(d.allCommunity[4]);
+    const error = Math.abs(guess - winPct);
+    const errClass = error <= 5 ? 'excellent' : error <= 10 ? 'good' : error <= 20 ? 'ok' : 'off';
+    const sepHtml = sep ? '<div class="arc-sep"></div>' : '';
+    return `${sepHtml}<div class="arc-section">
+      <div class="arc-section-header">
+        <span class="arc-street-name">${names[street]}</span>
+        <span class="arc-street-pct">${winPct}% <span class="arc-guess ${errClass}">(${guess}%)</span></span>
+      </div>
+      <div class="cards-row">${cardsHtml}</div>
+    </div>`;
+  };
+
+  const preflop   = state.winHistory.filter(h => h.street === 0);
+  const community = state.winHistory.filter(h => h.street > 0);
+
+  const row1 = preflop.length
+    ? `<div class="arc-row">${preflop.map((h, i) => makeSection(h, i > 0)).join('')}</div>` : '';
+  const row2 = community.length
+    ? `<div class="arc-row">${community.map((h, i) => makeSection(h, i > 0)).join('')}</div>` : '';
+
+  return row1 + row2;
+}
+
 // ---- Next Hand ----
 function onNext() {
+  // In Hold'em, advance to next street instead of dealing new hand
+  if (state.mode === 'holdem' && state.deal && state.deal.street < 3 && state.phase === 'revealed') {
+    advanceStreet();
+    return;
+  }
+
   state.deal             = dealHand();
   state.phase            = 'guessing';
   state.selectedDiscards = [];
+  state.winHistory       = [];
 
   const isDecide = state.mode === 'draw5' && state.drawSubMode === 'decide';
 
@@ -427,7 +528,19 @@ function updateScoreDisplay() {
   document.getElementById('score-display').textContent = label;
 }
 
-// ---- Stats view ----
+// ---- Overlays ----
+function openOverlay(id) {
+  document.getElementById('overlay-backdrop').style.display = 'block';
+  document.getElementById(id).style.display = 'flex';
+}
+
+function closeOverlays() {
+  document.getElementById('overlay-backdrop').style.display = 'none';
+  document.querySelectorAll('.overlay').forEach(o => o.style.display = 'none');
+  document.querySelectorAll('.icon-btn').forEach(b => b.classList.remove('active'));
+}
+
+// ---- Stats overlay ----
 const ALL_STAT_KEYS = [
   { key: 'stats_holdem',       label: "Hold'em",         isDecide: false },
   { key: 'stats_draw5_rate',   label: '5-Draw · Rate',   isDecide: false },
@@ -469,24 +582,12 @@ function renderStatsHTML() {
         <div class="stats-val dim"></div>
       </div>
     </div>
-    <button id="stats-reset-btn" class="btn btn-danger">Reset All Stats</button>`;
+  `;
 }
 
-function showStatsView() {
-  document.getElementById('cards-area').style.display    = 'none';
-  document.getElementById('reveal-area').innerHTML       = '';
-  document.getElementById('sub-mode-bar').style.display  = 'none';
-  document.querySelector('.guess-section').style.display = 'none';
-  const sv = document.getElementById('stats-view');
-  sv.style.display = 'flex';
-  sv.innerHTML = renderStatsHTML();
-  document.getElementById('stats-reset-btn').addEventListener('click', resetAllStats);
-}
-
-function showGameView() {
-  document.getElementById('stats-view').style.display    = 'none';
-  document.getElementById('cards-area').style.display    = '';
-  document.querySelector('.guess-section').style.display = '';
+function openStatsOverlay() {
+  document.getElementById('stats-overlay-body').innerHTML = renderStatsHTML();
+  openOverlay('stats-overlay');
 }
 
 function resetAllStats() {
@@ -494,9 +595,7 @@ function resetAllStats() {
   ALL_STAT_KEYS.forEach(({ key }) => localStorage.removeItem(key));
   state.score = { points: 0, hands: 0, totalError: 0 };
   updateScoreDisplay();
-  const sv = document.getElementById('stats-view');
-  sv.innerHTML = renderStatsHTML();
-  document.getElementById('stats-reset-btn').addEventListener('click', resetAllStats);
+  document.getElementById('stats-overlay-body').innerHTML = renderStatsHTML();
 }
 
 // ---- Init ----
@@ -508,11 +607,7 @@ function init() {
       document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
 
-      if (newMode === 'stats') { showStatsView(); return; }
-
-      const comingFromStats = document.getElementById('stats-view').style.display !== 'none';
-      showGameView();
-      if (newMode === state.mode && !comingFromStats) return;
+      if (newMode === state.mode) return;
       state.mode = newMode;
 
       // Show sub-mode bar only for 5-draw
@@ -535,6 +630,7 @@ function init() {
   // Opponents buttons
   document.querySelectorAll('.opp-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+      if (state.mode === 'holdem' && state.winHistory.length > 0) return;
       state.opponents = parseInt(btn.dataset.opp);
       document.querySelectorAll('.opp-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
@@ -563,10 +659,39 @@ function init() {
 
   // Buttons
   document.getElementById('submit-btn').addEventListener('click', onSubmit);
-  document.getElementById('next-btn').addEventListener('click', () => {
+
+  const nextBtn = document.getElementById('next-btn');
+  const floatBtn = document.getElementById('float-next-btn');
+  const onNextClick = () => {
     onNext();
     document.getElementById('app').scrollTop = 0;
+  };
+  nextBtn.addEventListener('click', onNextClick);
+  floatBtn.addEventListener('click', onNextClick);
+
+  // Show float button only when next-btn is fully visible (not behind header or off-screen)
+  const observer = new IntersectionObserver(([entry]) => {
+    floatBtn.style.display = (!entry.isIntersecting && nextBtn.style.display !== 'none') ? 'flex' : 'none';
+  }, {
+    root: document.getElementById('app'),
+    rootMargin: `-${document.querySelector('header').offsetHeight}px 0px 0px 0px`,
+    threshold: 1.0
   });
+  observer.observe(nextBtn);
+
+  // Stats + Help overlays
+  document.getElementById('stats-btn').addEventListener('click', () => {
+    openStatsOverlay();
+    document.getElementById('stats-btn').classList.add('active');
+  });
+  document.getElementById('help-btn').addEventListener('click', () => {
+    openOverlay('help-overlay');
+    document.getElementById('help-btn').classList.add('active');
+  });
+  document.getElementById('stats-close').addEventListener('click', closeOverlays);
+  document.getElementById('help-close').addEventListener('click', closeOverlays);
+  document.getElementById('overlay-backdrop').addEventListener('click', closeOverlays);
+  document.getElementById('stats-overlay-reset').addEventListener('click', resetAllStats);
 
   // Register service worker
   if ('serviceWorker' in navigator) {

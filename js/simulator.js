@@ -9,7 +9,13 @@
 //   numOpponents    - how many opponents (default 3)
 //   numSims         - number of Monte Carlo iterations (default 2000)
 //
-// Returns: { winPct } — integer 0-100
+// Returns: { winPct, topWinHand } — winPct is integer 0-100,
+//          topWinHand is the most common hand rank name when player wins (e.g. "Flush")
+
+const HAND_RANK_NAMES = [
+  'High Card','One Pair','Two Pair','Three of a Kind',
+  'Straight','Flush','Full House','Four of a Kind','Straight Flush'
+];
 
 function simulate({ playerCards, communityCards = [], communityNeeded = 0,
                     oppCardCount, sharedCommunity = false,
@@ -23,6 +29,7 @@ function simulate({ playerCards, communityCards = [], communityNeeded = 0,
   const pool = createDeck().filter(c => !knownKeys.has(cardKey(c)));
 
   let equity = 0;
+  const winHandCounts = new Array(9).fill(0);
 
   for (let s = 0; s < numSims; s++) {
     // Partial Fisher-Yates: shuffle only as many cards as we need
@@ -56,19 +63,26 @@ function simulate({ playerCards, communityCards = [], communityNeeded = 0,
 
     // 1/(1+tieCount) gives correct equity: 1.0 for outright win, 0.5 for 2-way split,
     // 0.33 for 3-way, 0.25 for 4-way, etc.
-    if (!lost) equity += 1 / (1 + tieCount);
+    if (!lost) {
+      equity += 1 / (1 + tieCount);
+      winHandCounts[playerScore[0]]++;
+    }
   }
 
-  return { winPct: Math.round(equity / numSims * 100) };
+  const topRank     = winHandCounts.indexOf(Math.max(...winHandCounts));
+  const topWinHand  = equity > 0 ? HAND_RANK_NAMES[topRank] : null;
+  return { winPct: Math.round(equity / numSims * 100), topWinHand };
 }
 
 // ---- 5-Card Draw: draw decision simulation ----
 
 // Simulate keeping a subset of cards and drawing replacements vs opponents.
+// Returns { winPct, topWinHand }
 function simulateDraw(keepCards, drawCount, numOpponents, numSims = 300) {
   const knownKeys = new Set(keepCards.map(cardKey));
   const pool = createDeck().filter(c => !knownKeys.has(cardKey(c)));
   let equity = 0;
+  const winHandCounts = new Array(9).fill(0);
 
   for (let s = 0; s < numSims; s++) {
     const needed = drawCount + numOpponents * 5;
@@ -90,9 +104,15 @@ function simulateDraw(keepCards, drawCount, numOpponents, numSims = 300) {
       if (cmp < 0) { lost = true; break; }
       if (cmp === 0) tieCount++;
     }
-    if (!lost) equity += 1 / (1 + tieCount);
+    if (!lost) {
+      equity += 1 / (1 + tieCount);
+      winHandCounts[playerScore[0]]++;
+    }
   }
-  return Math.round(equity / numSims * 100);
+
+  const topRank    = winHandCounts.indexOf(Math.max(...winHandCounts));
+  const topWinHand = equity > 0 ? HAND_RANK_NAMES[topRank] : null;
+  return { winPct: Math.round(equity / numSims * 100), topWinHand };
 }
 
 // Generate all C(n, r) index combinations.
@@ -115,7 +135,7 @@ function findOptimalDraw(hand, numOpponents = 3, maxDraw = 3) {
   for (let draw = 0; draw <= maxDraw; draw++) {
     for (const keepIdx of indexCombos(hand.length, hand.length - draw)) {
       const keepCards = keepIdx.map(i => hand[i]);
-      const winPct    = simulateDraw(keepCards, draw, numOpponents, 300);
+      const { winPct } = simulateDraw(keepCards, draw, numOpponents, 500);
       if (!best || winPct > best.winPct) {
         best = {
           keepIndices:    keepIdx,

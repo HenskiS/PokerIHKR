@@ -19,12 +19,17 @@
 
     <header>
       <div class="app-title">♠ Poker Trainer</div>
-      <div class="mode-tabs" role="tablist">
-        <button class="mode-tab active" data-mode="holdem"  role="tab" aria-selected="true">Hold'em</button>
-        <button class="mode-tab"        data-mode="draw5"   role="tab">5-Draw</button>
-        <button class="mode-tab"        data-mode="stud5"   role="tab">5-Stud</button>
-        <button class="mode-tab"        data-mode="stud7"   role="tab">7-Stud</button>
-        <button class="mode-tab"        data-mode="stats"   role="tab">Stats</button>
+      <div class="header-row">
+        <div class="mode-tabs" role="tablist">
+          <button class="mode-tab active" data-mode="holdem" role="tab" aria-selected="true">Hold'em</button>
+          <button class="mode-tab"        data-mode="draw5"  role="tab">5-Draw</button>
+          <button class="mode-tab"        data-mode="stud5"  role="tab">5-Stud</button>
+          <button class="mode-tab"        data-mode="stud7"  role="tab">7-Stud</button>
+        </div>
+        <div class="header-icons">
+          <button class="icon-btn" id="stats-btn" title="Stats">&#9783;</button>
+          <button class="icon-btn" id="help-btn"  title="Hand Reference">?</button>
+        </div>
       </div>
     </header>
 
@@ -67,8 +72,6 @@
       <!-- Reveal is injected here after submission -->
       <div id="reveal-area" aria-live="polite"></div>
 
-      <!-- Stats view — shown when Stats tab is active -->
-      <div id="stats-view" style="display:none"></div>
     </main>
 
     <footer>
@@ -83,6 +86,41 @@
       <div id="score-display" class="score-display">0 pts · 0 hands</div>
     </footer>
 
+  </div>
+
+  <!-- Floating next button -->
+  <button id="float-next-btn" class="float-next" style="display:none">&#8594;</button>
+
+  <!-- Overlays -->
+  <div id="overlay-backdrop" class="overlay-backdrop" style="display:none"></div>
+
+  <div id="help-overlay" class="overlay" style="display:none">
+    <div class="overlay-header">
+      <div class="overlay-title">Hand Rankings</div>
+      <button class="overlay-close" id="help-close">✕</button>
+    </div>
+    <div class="hand-table">
+      <div class="hand-row"><span class="hand-rank">1</span><span class="hand-name-ref">Royal Flush</span><span class="hand-example">A K Q J 10 ♠</span></div>
+      <div class="hand-row"><span class="hand-rank">2</span><span class="hand-name-ref">Straight Flush</span><span class="hand-example">9 8 7 6 5 ♥</span></div>
+      <div class="hand-row"><span class="hand-rank">3</span><span class="hand-name-ref">Four of a Kind</span><span class="hand-example">A A A A K</span></div>
+      <div class="hand-row"><span class="hand-rank">4</span><span class="hand-name-ref">Full House</span><span class="hand-example">K K K J J</span></div>
+      <div class="hand-row"><span class="hand-rank">5</span><span class="hand-name-ref">Flush</span><span class="hand-example">A J 8 4 2 ♦</span></div>
+      <div class="hand-row"><span class="hand-rank">6</span><span class="hand-name-ref">Straight</span><span class="hand-example">10 9 8 7 6</span></div>
+      <div class="hand-row"><span class="hand-rank">7</span><span class="hand-name-ref">Three of a Kind</span><span class="hand-example">7 7 7 A K</span></div>
+      <div class="hand-row"><span class="hand-rank">8</span><span class="hand-name-ref">Two Pair</span><span class="hand-example">A A K K Q</span></div>
+      <div class="hand-row"><span class="hand-rank">9</span><span class="hand-name-ref">One Pair</span><span class="hand-example">A A K Q J</span></div>
+      <div class="hand-row"><span class="hand-rank">10</span><span class="hand-name-ref">High Card</span><span class="hand-example">A K J 8 3</span></div>
+      <div class="hand-note">Ace plays low only in A-2-3-4-5 straight</div>
+    </div>
+  </div>
+
+  <div id="stats-overlay" class="overlay" style="display:none">
+    <div class="overlay-header">
+      <div class="overlay-title">Your Stats</div>
+      <button class="overlay-close" id="stats-close">✕</button>
+    </div>
+    <div id="stats-overlay-body"></div>
+    <button id="stats-overlay-reset" class="btn btn-danger" style="margin-top:8px">Reset All Stats</button>
   </div>
 
   <script src="js/deck.js"></script>
