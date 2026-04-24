@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <!-- Mobile / PWA meta -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Poker">
+  <meta name="theme-color" content="#122d18">
+  <link rel="manifest" href="manifest.json">
+  <!-- No external resources — runs fully offline -->
+  <link rel="stylesheet" href="style.css">
+  <title>Poker Trainer</title>
+</head>
+<body>
+  <div id="app">
+
+    <header>
+      <div class="app-title">♠ Poker Trainer</div>
+      <div class="mode-tabs" role="tablist">
+        <button class="mode-tab active" data-mode="holdem"  role="tab" aria-selected="true">Hold'em</button>
+        <button class="mode-tab"        data-mode="draw5"   role="tab">5-Draw</button>
+        <button class="mode-tab"        data-mode="stud5"   role="tab">5-Stud</button>
+        <button class="mode-tab"        data-mode="stud7"   role="tab">7-Stud</button>
+        <button class="mode-tab"        data-mode="stats"   role="tab">Stats</button>
+      </div>
+    </header>
+
+    <main>
+      <!-- Sub-mode toggle — only visible in 5-Draw mode -->
+      <div id="sub-mode-bar" style="display:none">
+        <button class="sub-btn active" data-submode="rate">Rate Hand</button>
+        <button class="sub-btn"        data-submode="decide">Draw Decision</button>
+      </div>
+
+      <!-- Cards are rendered here by app.js -->
+      <div id="cards-area" aria-live="polite"></div>
+
+      <!-- Guess section -->
+      <div class="guess-section">
+        <div class="guess-prompt">What's your win probability?</div>
+
+        <!-- Quick-tap buttons snap the slider -->
+        <div class="strength-btns">
+          <button class="strength-btn" data-value="10">Fold</button>
+          <button class="strength-btn" data-value="30">Weak</button>
+          <button class="strength-btn" data-value="50">Average</button>
+          <button class="strength-btn" data-value="70">Strong</button>
+          <button class="strength-btn" data-value="90">Monster</button>
+        </div>
+
+        <div class="slider-wrap">
+          <input type="range" id="slider" min="0" max="100" value="50" aria-label="Win probability guess">
+          <div class="slider-ends">
+            <span>0%</span>
+            <span>100%</span>
+          </div>
+          <div id="slider-value" class="slider-value">50%</div>
+        </div>
+
+        <button id="submit-btn" class="btn btn-primary">Submit</button>
+        <button id="next-btn"   class="btn btn-next" style="display:none">Next Hand →</button>
+      </div>
+
+      <!-- Reveal is injected here after submission -->
+      <div id="reveal-area" aria-live="polite"></div>
+
+      <!-- Stats view — shown when Stats tab is active -->
+      <div id="stats-view" style="display:none"></div>
+    </main>
+
+    <footer>
+      <div class="opp-section">
+        <span>vs</span>
+        <button class="opp-btn"        data-opp="2">2</button>
+        <button class="opp-btn active" data-opp="3">3</button>
+        <button class="opp-btn"        data-opp="4">4</button>
+        <button class="opp-btn"        data-opp="5">5</button>
+        <span>opp</span>
+      </div>
+      <div id="score-display" class="score-display">0 pts · 0 hands</div>
+    </footer>
+
+  </div>
+
+  <script src="js/deck.js"></script>
+  <script src="js/evaluator.js"></script>
+  <script src="js/simulator.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
