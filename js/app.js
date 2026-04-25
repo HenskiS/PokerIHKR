@@ -530,6 +530,69 @@ function updateScoreDisplay() {
   document.getElementById('score-display').textContent = label;
 }
 
+// ---- Win% range data (from ranges.js simulation, 4000 sims, 5 opponents) ----
+const RANGE_DATA = {
+  '5stud': [
+    { name: 'High Card',        min:  0, max:  3 },
+    { name: 'One Pair',         min:  4, max: 63 },
+    { name: 'Two Pair',         min: 66, max: 86 },
+    { name: 'Three of a Kind',  min: 86, max: 95 },
+    { name: 'Straight',         min: 96, max: 98 },
+    { name: 'Flush',            min: 98, max: 99 },
+    { name: 'Full House',       min: 99, max: 100 },
+    { name: 'Four of a Kind',   min: 100, max: 100 },
+    { name: 'Straight Flush',   min: 100, max: 100 },
+  ],
+  '5draw': [
+    { name: 'High Card',        min:  0, max:  3 },
+    { name: 'One Pair',         min:  4, max: 63 },
+    { name: 'Two Pair',         min: 66, max: 86 },
+    { name: 'Three of a Kind',  min: 86, max: 95 },
+    { name: 'Straight',         min: 96, max: 98 },
+    { name: 'Flush',            min: 98, max: 99 },
+    { name: 'Full House',       min: 99, max: 100 },
+    { name: 'Four of a Kind',   min: 100, max: 100 },
+    { name: 'Straight Flush',   min: 100, max: 100 },
+  ],
+  '7stud': [
+    { name: 'High Card',        min:  0, max:  0 },
+    { name: 'One Pair',         min:  0, max:  8 },
+    { name: 'Two Pair',         min:  9, max: 41 },
+    { name: 'Three of a Kind',  min: 43, max: 55 },
+    { name: 'Straight',         min: 58, max: 75 },
+    { name: 'Flush',            min: 72, max: 83 },
+    { name: 'Full House',       min: 85, max: 99 },
+    { name: 'Four of a Kind',   min: 99, max: 100 },
+    { name: 'Straight Flush',   min: 100, max: 100 },
+  ],
+  'holdem': [
+    { name: 'High Card',        min:  0, max:  0 },
+    { name: 'One Pair',         min:  0, max: 48 },
+    { name: 'Two Pair',         min: 55, max: 86 },
+    { name: 'Three of a Kind',  min: 36, max: 84 },
+    { name: 'Straight',         min: 98, max: 98 },
+    { name: 'Flush',            min: 86, max: 100 },
+    { name: 'Full House',       min: 89, max: 100 },
+    { name: 'Four of a Kind',   min: 100, max: 100 },
+    { name: 'Straight Flush',   min: 100, max: 100 },
+  ],
+};
+
+function buildRangeChart(data) {
+  return data.map(({ name, min, max }) => {
+    const isDot  = min === max;
+    const label  = isDot ? `${min}%` : `${min}–${max}%`;
+    const barHtml = isDot
+      ? `<div class="range-bar-dot" style="left:${min}%"></div>`
+      : `<div class="range-bar" style="left:${min}%;width:${max - min}%"></div>`;
+    return `<div class="range-row">
+      <div class="range-name">${name}</div>
+      <div class="range-bar-wrap">${barHtml}</div>
+      <div class="range-pct">${label}</div>
+    </div>`;
+  }).join('');
+}
+
 // ---- Overlays ----
 function openOverlay(id) {
   document.getElementById('overlay-backdrop').style.display = 'block';
@@ -687,8 +750,23 @@ function init() {
     document.getElementById('stats-btn').classList.add('active');
   });
   document.getElementById('help-btn').addEventListener('click', () => {
+    // Populate range charts once
+    document.getElementById('range-5stud').innerHTML  = buildRangeChart(RANGE_DATA['5stud']);
+    document.getElementById('range-5draw').innerHTML  = buildRangeChart(RANGE_DATA['5draw']);
+    document.getElementById('range-7stud').innerHTML  = buildRangeChart(RANGE_DATA['7stud']);
+    document.getElementById('range-holdem').innerHTML = buildRangeChart(RANGE_DATA['holdem']);
     openOverlay('help-overlay');
     document.getElementById('help-btn').classList.add('active');
+  });
+
+  // Help overlay tabs
+  document.querySelectorAll('.help-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.help-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.help-panel').forEach(p => p.style.display = 'none');
+      tab.classList.add('active');
+      document.getElementById(`help-${tab.dataset.help}`).style.display = 'block';
+    });
   });
   document.getElementById('stats-close').addEventListener('click', closeOverlays);
   document.getElementById('help-close').addEventListener('click', closeOverlays);

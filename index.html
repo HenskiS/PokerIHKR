@@ -97,21 +97,48 @@
 
   <div id="help-overlay" class="overlay" style="display:none">
     <div class="overlay-header">
-      <div class="overlay-title">Hand Rankings</div>
+      <div class="overlay-title">Hand Reference</div>
       <button class="overlay-close" id="help-close">✕</button>
     </div>
-    <div class="hand-table">
-      <div class="hand-row"><span class="hand-rank">1</span><span class="hand-name-ref">Royal Flush</span><span class="hand-example">A K Q J 10 ♠</span></div>
-      <div class="hand-row"><span class="hand-rank">2</span><span class="hand-name-ref">Straight Flush</span><span class="hand-example">9 8 7 6 5 ♥</span></div>
-      <div class="hand-row"><span class="hand-rank">3</span><span class="hand-name-ref">Four of a Kind</span><span class="hand-example">A A A A K</span></div>
-      <div class="hand-row"><span class="hand-rank">4</span><span class="hand-name-ref">Full House</span><span class="hand-example">K K K J J</span></div>
-      <div class="hand-row"><span class="hand-rank">5</span><span class="hand-name-ref">Flush</span><span class="hand-example">A J 8 4 2 ♦</span></div>
-      <div class="hand-row"><span class="hand-rank">6</span><span class="hand-name-ref">Straight</span><span class="hand-example">10 9 8 7 6</span></div>
-      <div class="hand-row"><span class="hand-rank">7</span><span class="hand-name-ref">Three of a Kind</span><span class="hand-example">7 7 7 A K</span></div>
-      <div class="hand-row"><span class="hand-rank">8</span><span class="hand-name-ref">Two Pair</span><span class="hand-example">A A K K Q</span></div>
-      <div class="hand-row"><span class="hand-rank">9</span><span class="hand-name-ref">One Pair</span><span class="hand-example">A A K Q J</span></div>
-      <div class="hand-row"><span class="hand-rank">10</span><span class="hand-name-ref">High Card</span><span class="hand-example">A K J 8 3</span></div>
-      <div class="hand-note">Ace plays low only in A-2-3-4-5 straight</div>
+    <div class="help-tabs">
+      <button class="help-tab active" data-help="rankings">Rankings</button>
+      <button class="help-tab" data-help="odds5stud">5-Stud</button>
+      <button class="help-tab" data-help="odds5draw">5-Draw</button>
+      <button class="help-tab" data-help="odds7stud">7-Stud</button>
+      <button class="help-tab" data-help="oddsholdem">Hold'em</button>
+    </div>
+
+    <div id="help-rankings" class="help-panel">
+      <div class="hand-table">
+        <div class="hand-row"><span class="hand-rank">1</span><span class="hand-name-ref">Royal Flush</span><span class="hand-example">A K Q J 10 ♠</span></div>
+        <div class="hand-row"><span class="hand-rank">2</span><span class="hand-name-ref">Straight Flush</span><span class="hand-example">9 8 7 6 5 ♥</span></div>
+        <div class="hand-row"><span class="hand-rank">3</span><span class="hand-name-ref">Four of a Kind</span><span class="hand-example">A A A A K</span></div>
+        <div class="hand-row"><span class="hand-rank">4</span><span class="hand-name-ref">Full House</span><span class="hand-example">K K K J J</span></div>
+        <div class="hand-row"><span class="hand-rank">5</span><span class="hand-name-ref">Flush</span><span class="hand-example">A J 8 4 2 ♦</span></div>
+        <div class="hand-row"><span class="hand-rank">6</span><span class="hand-name-ref">Straight</span><span class="hand-example">10 9 8 7 6</span></div>
+        <div class="hand-row"><span class="hand-rank">7</span><span class="hand-name-ref">Three of a Kind</span><span class="hand-example">7 7 7 A K</span></div>
+        <div class="hand-row"><span class="hand-rank">8</span><span class="hand-name-ref">Two Pair</span><span class="hand-example">A A K K Q</span></div>
+        <div class="hand-row"><span class="hand-rank">9</span><span class="hand-name-ref">One Pair</span><span class="hand-example">A A K Q J</span></div>
+        <div class="hand-row"><span class="hand-rank">10</span><span class="hand-name-ref">High Card</span><span class="hand-example">A K J 8 3</span></div>
+        <div class="hand-note">Ace plays low only in A-2-3-4-5 straight</div>
+      </div>
+    </div>
+
+    <div id="help-odds5stud" class="help-panel" style="display:none">
+      <div class="range-note">Win % range vs 5 opponents · low → high of hand type</div>
+      <div class="range-chart" id="range-5stud"></div>
+    </div>
+    <div id="help-odds5draw" class="help-panel" style="display:none">
+      <div class="range-note">Win % range vs 5 opponents · low → high of hand type</div>
+      <div class="range-chart" id="range-5draw"></div>
+    </div>
+    <div id="help-odds7stud" class="help-panel" style="display:none">
+      <div class="range-note">Win % range vs 5 opponents · low → high of hand type</div>
+      <div class="range-chart" id="range-7stud"></div>
+    </div>
+    <div id="help-oddsholdem" class="help-panel" style="display:none">
+      <div class="range-note">Win % range vs 5 opponents · at the river</div>
+      <div class="range-chart" id="range-holdem"></div>
     </div>
   </div>
 
