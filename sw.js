@@ -1,4 +1,4 @@
-const CACHE = 'poker-trainer-v3';
+const CACHE = 'poker-trainer-v4';
 const ASSETS = [
   '.', 'index.html', 'style.css',
   'js/deck.js', 'js/evaluator.js', 'js/simulator.js', 'js/app.js',

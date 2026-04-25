@@ -5,7 +5,7 @@ const state = {
   selectedDiscards: [],       // card indices marked for discard in decide mode
   deal:             null,
   phase:            'guessing',
-  opponents:        3,
+  opponents:        5,
   score:            { points: 0, hands: 0, totalError: 0 },
   winHistory:       []        // [{street, winPct}] for current Hold'em hand
 };
@@ -530,65 +530,68 @@ function updateScoreDisplay() {
   document.getElementById('score-display').textContent = label;
 }
 
-// ---- Win% range data (from ranges.js simulation, 4000 sims, 5 opponents) ----
+// ---- Win% range data (Monte Carlo, 1200 sims × 60 samples per rank, 5 opponents) ----
+// Hold'em: only includes hands where at least one hole card contributes to the best 5.
 const RANGE_DATA = {
   '5stud': [
-    { name: 'High Card',        min:  0, max:  3 },
-    { name: 'One Pair',         min:  4, max: 63 },
-    { name: 'Two Pair',         min: 66, max: 86 },
-    { name: 'Three of a Kind',  min: 86, max: 95 },
-    { name: 'Straight',         min: 96, max: 98 },
-    { name: 'Flush',            min: 98, max: 99 },
-    { name: 'Full House',       min: 99, max: 100 },
-    { name: 'Four of a Kind',   min: 100, max: 100 },
-    { name: 'Straight Flush',   min: 100, max: 100 },
+    { name: 'High Card',        min:   0, avg:   1, max:   3 },
+    { name: 'One Pair',         min:   3, avg:  22, max:  67 },
+    { name: 'Two Pair',         min:  65, avg:  75, max:  86 },
+    { name: 'Three of a Kind',  min:  84, avg:  91, max:  96 },
+    { name: 'Straight',         min:  95, avg:  97, max:  99 },
+    { name: 'Flush',            min:  97, avg:  99, max: 100 },
+    { name: 'Full House',       min:  99, avg:  99, max: 100 },
+    { name: 'Four of a Kind',   min: 100, avg: 100, max: 100 },
+    { name: 'Straight Flush',   min: 100, avg: 100, max: 100 },
   ],
   '5draw': [
-    { name: 'High Card',        min:  0, max:  3 },
-    { name: 'One Pair',         min:  4, max: 63 },
-    { name: 'Two Pair',         min: 66, max: 86 },
-    { name: 'Three of a Kind',  min: 86, max: 95 },
-    { name: 'Straight',         min: 96, max: 98 },
-    { name: 'Flush',            min: 98, max: 99 },
-    { name: 'Full House',       min: 99, max: 100 },
-    { name: 'Four of a Kind',   min: 100, max: 100 },
-    { name: 'Straight Flush',   min: 100, max: 100 },
+    { name: 'High Card',        min:   0, avg:   1, max:   3 },
+    { name: 'One Pair',         min:   3, avg:  22, max:  68 },
+    { name: 'Two Pair',         min:  65, avg:  76, max:  87 },
+    { name: 'Three of a Kind',  min:  84, avg:  90, max:  96 },
+    { name: 'Straight',         min:  95, avg:  97, max:  99 },
+    { name: 'Flush',            min:  98, avg:  99, max: 100 },
+    { name: 'Full House',       min:  98, avg:  99, max: 100 },
+    { name: 'Four of a Kind',   min: 100, avg: 100, max: 100 },
+    { name: 'Straight Flush',   min: 100, avg: 100, max: 100 },
   ],
   '7stud': [
-    { name: 'High Card',        min:  0, max:  0 },
-    { name: 'One Pair',         min:  0, max:  8 },
-    { name: 'Two Pair',         min:  9, max: 41 },
-    { name: 'Three of a Kind',  min: 43, max: 55 },
-    { name: 'Straight',         min: 58, max: 75 },
-    { name: 'Flush',            min: 72, max: 83 },
-    { name: 'Full House',       min: 85, max: 99 },
-    { name: 'Four of a Kind',   min: 99, max: 100 },
-    { name: 'Straight Flush',   min: 100, max: 100 },
+    { name: 'High Card',        min:   0, avg:   0, max:   0 },
+    { name: 'One Pair',         min:   0, avg:   2, max:   9 },
+    { name: 'Two Pair',         min:   7, avg:  22, max:  43 },
+    { name: 'Three of a Kind',  min:  40, avg:  50, max:  58 },
+    { name: 'Straight',         min:  55, avg:  65, max:  76 },
+    { name: 'Flush',            min:  70, avg:  78, max:  88 },
+    { name: 'Full House',       min:  84, avg:  91, max:  99 },
+    { name: 'Four of a Kind',   min:  98, avg:  99, max: 100 },
+    { name: 'Straight Flush',   min: 100, avg: 100, max: 100 },
   ],
   'holdem': [
-    { name: 'High Card',        min:  0, max:  0 },
-    { name: 'One Pair',         min:  0, max: 48 },
-    { name: 'Two Pair',         min: 55, max: 86 },
-    { name: 'Three of a Kind',  min: 36, max: 84 },
-    { name: 'Straight',         min: 98, max: 98 },
-    { name: 'Flush',            min: 86, max: 100 },
-    { name: 'Full House',       min: 89, max: 100 },
-    { name: 'Four of a Kind',   min: 100, max: 100 },
-    { name: 'Straight Flush',   min: 100, max: 100 },
+    { name: 'High Card',        min:   0, avg:   0, max:   1 },
+    { name: 'One Pair',         min:   0, avg:   5, max:  40 },
+    { name: 'Two Pair',         min:   0, avg:  17, max:  66 },
+    { name: 'Three of a Kind',  min:   0, avg:  44, max:  91 },
+    { name: 'Straight',         min:   4, avg:  60, max:  98 },
+    { name: 'Flush',            min:   9, avg:  67, max: 100 },
+    { name: 'Full House',       min:  21, avg:  75, max: 100 },
+    { name: 'Four of a Kind',   min:   0, avg:  95, max: 100 },
+    { name: 'Straight Flush',   min:  78, avg: 100, max: 100 },
   ],
 };
 
 function buildRangeChart(data) {
-  return data.map(({ name, min, max }) => {
-    const isDot  = min === max;
-    const label  = isDot ? `${min}%` : `${min}–${max}%`;
+  return data.map(({ name, min, avg, max }) => {
+    const isDot   = min === max;
+    const pctText = isDot ? `${min}%` : (avg != null ? `${avg}%` : `${min}–${max}%`);
+    const avgPct  = (avg != null && !isDot && max > min) ? Math.round((avg - min) / (max - min) * 100) : null;
+    const avgPip  = avgPct != null ? `<div class="range-bar-avg" style="left:${avgPct}%"></div>` : '';
     const barHtml = isDot
       ? `<div class="range-bar-dot" style="left:${min}%"></div>`
-      : `<div class="range-bar" style="left:${min}%;width:${max - min}%"></div>`;
+      : `<div class="range-bar" style="left:${min}%;width:${max - min}%">${avgPip}</div>`;
     return `<div class="range-row">
       <div class="range-name">${name}</div>
       <div class="range-bar-wrap">${barHtml}</div>
-      <div class="range-pct">${label}</div>
+      <div class="range-pct">${pctText}</div>
     </div>`;
   }).join('');
 }
